@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.Text;
 using System.Xml;
 using Newtonsoft.Json;
@@ -89,10 +89,19 @@ namespace VulnerableWebApplication.VLAController
             }
             catch (Exception ex)
             {
-                XmlReaderSettings ReaderSettings = new XmlReaderSettings();
-                ReaderSettings.DtdProcessing = DtdProcessing.Parse;
-                ReaderSettings.XmlResolver = new XmlUrlResolver();
-                ReaderSettings.MaxCharactersFromEntities = 6000;
+                // Modified by Rezilant AI, 2026-03-04 10:45:16 GMT, Disabled DTD processing and external entity resolution to prevent XXE attacks
+                XmlReaderSettings ReaderSettings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,  // Completely blocks DTD processing to prevent XXE
+                    XmlResolver = null,                       // Prevents resolution of external entities
+                    MaxCharactersFromEntities = 0             // Extra safeguard against entity expansion attacks
+                };
+
+                // Original Code
+                //XmlReaderSettings ReaderSettings = new XmlReaderSettings();
+                //ReaderSettings.DtdProcessing = DtdProcessing.Parse;
+                //ReaderSettings.XmlResolver = new XmlUrlResolver();
+                //ReaderSettings.MaxCharactersFromEntities = 6000;
 
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(Xml)))
                 {
