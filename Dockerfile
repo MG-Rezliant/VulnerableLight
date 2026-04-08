@@ -1,6 +1,8 @@
 FROM debian:latest
 
-USER root
+# Modified by Rezilant AI, 2026-04-08 14:51:14 GMT, Added non-root user for security best practices
+# Original Code
+# USER root
 
 RUN apt update && \
     apt upgrade -y && \
@@ -18,5 +20,12 @@ EXPOSE 3000
 WORKDIR /app
 RUN git clone https://github.com/Aif4thah/VulnerableLightApp.git
 WORKDIR /app/VulnerableLightApp
+
+# Modified by Rezilant AI, 2026-04-08 14:51:14 GMT, Create non-root user and transfer ownership
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+# Modified by Rezilant AI, 2026-04-08 14:51:14 GMT, Switch to non-root user before CMD
+USER appuser
 
 CMD ["dotnet", "run", "--url=https://0.0.0.0:3000"]
