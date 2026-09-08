@@ -12,6 +12,7 @@ using System.Xml.Xsl;
 using System.Runtime.InteropServices;
 using System.Web;
 using VulnerableWebApplication.VLAModel;
+using Newtonsoft.Json.Serialization;
 
 
 namespace VulnerableWebApplication.VLAController
@@ -23,6 +24,33 @@ namespace VulnerableWebApplication.VLAController
         public static void SetLogFile(string logFile)
         {
             LogFile = logFile;
+        }
+
+        // Modified by Rezilant AI, 2026-09-08 06:18:27 GMT, Added custom SerializationBinder to whitelist allowed types for secure deserialization
+        public class SafeSerializationBinder : ISerializationBinder
+        {
+            private readonly HashSet<string> _allowedTypes = new HashSet<string>
+            {
+                "VulnerableWebApplication.VLAModel.Employee"
+            };
+
+            public Type BindToType(string assemblyName, string typeName)
+            {
+                string fullTypeName = $"{typeName}, {assemblyName}";
+                
+                if (_allowedTypes.Contains(typeName))
+                {
+                    return Type.GetType(fullTypeName, throwOnError: false);
+                }
+                
+                throw new JsonSerializationException($"Type '{typeName}' is not allowed for deserialization");
+            }
+
+            public void BindToName(Type serializedType, out string assemblyName, out string typeName)
+            {
+                assemblyName = serializedType.Assembly.FullName;
+                typeName = serializedType.FullName;
+            }
         }
 
         public static object VulnerableHelloWorld(string FileName = "english")
@@ -49,7 +77,15 @@ namespace VulnerableWebApplication.VLAController
             if (!File.Exists(ROFile)) File.Create(ROFile).Dispose();
             File.SetAttributes(ROFile, FileAttributes.ReadOnly);
 
-            JsonConvert.DeserializeObject<object>(Json, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });            
+            // Modified by Rezilant AI, 2026-09-08 06:18:27 GMT, Replaced TypeNameHandling.All with TypeNameHandling.Auto and added SafeSerializationBinder to prevent arbitrary code execution
+            var settings = new JsonSerializerSettings()
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                SerializationBinder = new SafeSerializationBinder()
+            };
+            JsonConvert.DeserializeObject<object>(Json, settings);
+            // Original Code
+            // JsonConvert.DeserializeObject<object>(Json, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });            
             Employee NewEmployee = JsonConvert.DeserializeObject<Employee>(Json);
 
             if (NewEmployee != null && !string.IsNullOrEmpty(NewEmployee.Address) && !string.IsNullOrEmpty(NewEmployee.Id))
